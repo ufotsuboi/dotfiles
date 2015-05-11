@@ -1,0 +1,7 @@
+# My settings
+
+# prompt
+local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
+
+# alias
+alias emacs="/Applications/Emacs.app/Contents/MacOS/Emacs -nw"
