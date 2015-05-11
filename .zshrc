@@ -62,6 +62,7 @@ export LSCOLORS="Gxfxcxdxbxegedabagacad"
 zstyle ':completion:*' list-colors ''
 
 # List directory contents
+alias ls='ls -G'
 alias lsa='ls -lah'
 alias l='ls -lah'
 alias ll='ls -lh'
@@ -152,15 +153,9 @@ bindkey -s '\el' 'ls\n'
 # [Ctrl-r] - Search backward incrementally for a specified string. The string may begin with ^ to anchor the search to the beginning of the line.
 bindkey '^r' history-incremental-search-backward
 
-# start typing + [Up-Arrow] - fuzzy find history forward
-if [[ "${terminfo[kcuu1]}" != "" ]]; then
-  bindkey "${terminfo[kcuu1]}" up-line-or-beginning-search
-fi
-
-# start typing + [Down-Arrow] - fuzzy find history backward
-if [[ "${terminfo[kcud1]}" != "" ]]; then
-  bindkey "${terminfo[kcud1]}" down-line-or-beginning-search
-fi
+#
+bindkey "^[[A" up-line-or-beginning-search
+bindkey "^[[B" down-line-or-beginning-search
 
 # [Space] - do history expansion
 bindkey ' ' magic-space
