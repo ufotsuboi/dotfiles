@@ -1,0 +1,6 @@
+[submodule ".zsh.d/plugins/cd-gitroot"]
+	path = .zsh.d/plugins/cd-gitroot
+	url = git@github.com:mollifier/cd-gitroot.git
+[submodule ".zsh.d/plugins/zsh-completions"]
+	path = .zsh.d/plugins/zsh-completions
+	url = git@github.com:zsh-users/zsh-completions.git
