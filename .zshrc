@@ -33,8 +33,14 @@ alias cdg='cd-gitroot'
 autoload -Uz compinit
 compinit -u
 
+# 完全な補完をしたらカーソルを末尾へ移動する
+setopt always_to_end
+
 # 拡張 glob を有効にする
 setopt extended_glob
+
+# カーソル部分から補完を開始する
+setopt complete_in_word
 
 # <Tab> でパス名の補完候補を表示したあと、続けて <Tab> を押すと候補からパス名を選択できるようになる
 zstyle ':completion:*:default' menu select=1
@@ -81,9 +87,6 @@ alias ll='ls -lh'
 alias la='ls -lAh'
 alias lr='ls -lrth'
 
-# 入力したコマンドが存在せず、かつディレクトリ名と一致するなら、ディレクトリに cd する
-setopt auto_cd
-
 # 上記により...で二つ上のディレクトリに移動
 alias -g ...='../..'
 alias -g ....='../../..'
@@ -93,9 +96,15 @@ alias -g ......='../../../../..'
 # "~hoge" が特定のパス名に展開されるようにする（ブックマークのようなもの）
 # hash -d hoge=/long/path/to/hogehoge
 
+# 入力したコマンドが存在せず、かつディレクトリ名と一致するなら、ディレクトリに cd する
+setopt auto_cd
+
 # cd した先のディレクトリをディレクトリスタックに追加する
 # `cd +<Tab>` でディレクトリの履歴が表示され、そこに移動できる
 setopt auto_pushd
+
+# ディレクトリが見つからない場合に先頭に~をつけて試行する
+setopt cdable_vars
 
 # pushd したとき、ディレクトリがすでにスタックに含まれていればスタックに追加しない
 setopt pushd_ignore_dups
