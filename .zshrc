@@ -17,7 +17,7 @@ autoload -U colors && colors
 autoload -Uz cd-gitroot
 
 # git alias
-alias gaa='git add .'
+alias gaa='git add -A'
 alias gst='git status'
 alias gcm='git commit'
 alias gbr='git branch'
@@ -240,4 +240,4 @@ if [ -d ${HOME}/.anyenv ] ; then
 fi
 
 
-[ -f ~/.zshrc.mine ] && source ~/.zshrc.mine
+[ -f ~/.zshrc.local ] && source ~/.zshrc.local
