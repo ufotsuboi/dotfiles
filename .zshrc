@@ -21,8 +21,8 @@ alias gaa='git add -A'
 alias gst='git status'
 alias gcm='git commit'
 alias gbr='git branch'
-alias gpl='git push'
-alias gps='git pull'
+alias gpl='git pull'
+alias gps='git push'
 alias cdg='cd-gitroot'
 
 ############
