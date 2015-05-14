@@ -229,6 +229,9 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 # other
 ############
 
+# alias
+alias e="emacs"
+
 # anyenv
 if [ -d ${HOME}/.anyenv ] ; then
     export PATH="$HOME/.anyenv/bin:$PATH"
