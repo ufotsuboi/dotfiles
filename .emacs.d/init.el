@@ -290,7 +290,8 @@
 (add-to-list 'auto-mode-alist '("\\.p[lm]$" . cperl-mode))
 (add-to-list 'auto-mode-alist '("\\.t$" . cperl-mode))
 (add-to-list 'auto-mode-alist '("\\.psgi$" . cperl-mode))
-(add-to-list 'auto-mode-alist '("^cpanfile$" . cperl-mode))
+(add-to-list 'auto-mode-alist '("cpanfile$" . cperl-mode))
+(add-to-list 'auto-mode-alist '("Daikufile$" . cperl-mode))
 
 (add-hook 'cperl-mode-hook
           '(lambda ()
@@ -317,3 +318,8 @@
 ;; sh-mode
 (add-to-list 'auto-mode-alist '("\\.zsh\\'" . sh-mode))
 (add-to-list 'auto-mode-alist '("\\.zshrc.*" . sh-mode))
+
+;; sql-mode
+;; (eval-after-load "sql"
+;;   '(load-library "sql-indent"))
+;; (sql-set-product "mysql")
