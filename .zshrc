@@ -181,6 +181,7 @@ bindkey "^[[B" down-line-or-beginning-search
 # [Space] - do history expansion
 bindkey ' ' magic-space
 
+
 ############
 # prompt
 ############
@@ -236,10 +237,10 @@ alias e="emacs"
 if [ -d ${HOME}/.anyenv ] ; then
     export PATH="$HOME/.anyenv/bin:$PATH"
     eval "$(anyenv init -)"
-    # for D in `ls $HOME/.anyenv/envs`
-    # do
-    #     export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
-    # done
+    for D in `ls $HOME/.anyenv/envs`
+    do
+        export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
+    done
 fi
 
 
