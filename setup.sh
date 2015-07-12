@@ -5,7 +5,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 dir=$(cd $(dirname $0);pwd)
 
 # リンクを作成しないファイル名のリスト
-ignorefiles=("." ".." ".zshrc.local" ".git" ".gitignore" "${0##*/}")
+ignorefiles=("." ".." ".zshrc.local" ".git" ".gitsubmodule" ".gitignore" "${0##*/}")
 
 for dotfile in .?*; do
   is_ignored=0
