@@ -323,3 +323,13 @@
 ;; (eval-after-load "sql"
 ;;   '(load-library "sql-indent"))
 ;; (sql-set-product "mysql")
+
+;;; Ruby
+;; ruby-mode
+(add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))
+
+;; rspec-mode
+;; (require 'rspec-mode)
+;; (custom-set-variables '(rspec-use-rake-flag nil))
+;; (eval-after-load 'rspec-mode
+;;   '(rspec-install-snippets))
