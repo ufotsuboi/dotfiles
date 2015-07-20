@@ -225,7 +225,9 @@
    ((t (:foreground "#FF7F00"))))
  )
 
-;;; js2-mode
+;;; js-mode
+
+(add-to-list 'auto-mode-alist '("\\.coffee$" . js-mode))
 
 ;; (when (load "js2" t)
 ;;   (setq js2-cleanup-whitespace nil
