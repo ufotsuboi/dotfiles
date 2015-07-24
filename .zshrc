@@ -104,7 +104,7 @@ setopt auto_cd
 setopt auto_pushd
 
 # ディレクトリが見つからない場合に先頭に~をつけて試行する
-setopt cdable_vars
+#setopt cdable_vars
 
 # pushd したとき、ディレクトリがすでにスタックに含まれていればスタックに追加しない
 setopt pushd_ignore_dups
