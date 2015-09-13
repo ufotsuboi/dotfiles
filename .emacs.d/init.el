@@ -227,7 +227,15 @@
 
 ;;; js-mode
 
-(add-to-list 'auto-mode-alist '("\\.coffee$" . js-mode))
+(add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
+(defun coffee-custom ()
+  "coffee-mode-hook"
+  (and (set (make-local-variable 'tab-width) 2)
+       (set (make-local-variable 'coffee-tab-width) 2))
+  )
+
+(add-hook 'coffee-mode-hook
+          '(lambda() (coffee-custom)))
 
 ;; (when (load "js2" t)
 ;;   (setq js2-cleanup-whitespace nil
@@ -285,6 +293,10 @@
             (flymake-mode t)
             ))
 ;(add-to-list 'ac-modes 'scss-mode)
+
+;; stylus-mode
+(require 'stylus-mode)
+(add-to-list 'auto-mode-alist '("\\.styl$" . stylus-mode))
 
 ;; cperl-mode
 (add-to-list 'interpreter-mode-alist '("perl" . cperl-mode))

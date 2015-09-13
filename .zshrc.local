@@ -5,3 +5,5 @@ local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
 
 # alias
 alias emacs="/Applications/Emacs.app/Contents/MacOS/Emacs -nw"
+
+export PATH=/Users/yuuho.tsuboi/google-cloud-sdk/bin:$PATH
