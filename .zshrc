@@ -23,6 +23,7 @@ alias gcm='git commit'
 alias gbr='git branch'
 alias gpl='git pull'
 alias gps='git push'
+alias ggr='git grep'
 alias cdg='cd-gitroot'
 
 ############
@@ -232,6 +233,7 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 
 # alias
 alias e="emacs"
+alias mysql="mysql --auto-rehash"
 
 # anyenv
 if [ -d ${HOME}/.anyenv ] ; then

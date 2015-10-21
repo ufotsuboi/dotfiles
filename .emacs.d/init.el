@@ -171,7 +171,7 @@
   ;; css indent
   (setq web-mode-css-indent-offset 2)
   ;; script indent(js,php,etc..)
-  (setq web-mode-code-indent-offset 4)
+  (setq web-mode-code-indent-offset 2)
   (setq web-mode-content-types-alist
         '(("jsx"  . "\\.js[x]?\\'")))
   ;; htmlの内容をインデント
@@ -278,12 +278,13 @@
 (autoload 'scss-mode "scss-mode" nil t)
 ; (add-to-list 'auto-mode-alist '("\\.scss\\'" . scss-mode))
 (add-to-list 'auto-mode-alist '("\\.\\(scss\\|css\\)\\'" . scss-mode))
+(add-to-list 'auto-mode-alist '("\\.styl$" . scss-mode))
 ;(add-hook 'scss-mode-hook 'ac-css-mode-setup)
 (add-hook 'scss-mode-hook
           (lambda ()
             (define-key scss-mode-map "\M-[" 'my-css-electric-pair-brace)
             ;;(define-key scss-mode-map ";" 'my-semicolon-ret)
-            (setq css-indent-offset 4)
+            (setq css-indent-offset 2)
             (setq scss-compile-at-save nil)
             (setq ac-sources '(ac-source-yasnippet
                                ;; ac-source-words-in-same-mode-buffers
@@ -295,8 +296,7 @@
 ;(add-to-list 'ac-modes 'scss-mode)
 
 ;; stylus-mode
-(require 'stylus-mode)
-(add-to-list 'auto-mode-alist '("\\.styl$" . stylus-mode))
+;(require 'stylus-mode)
 
 ;; cperl-mode
 (add-to-list 'interpreter-mode-alist '("perl" . cperl-mode))
@@ -340,6 +340,8 @@
 
 ;;; Ruby
 ;; ruby-mode
+(require 'ruby-mode)
+(defun ruby-mode-set-encoding () nil)
 (add-to-list 'auto-mode-alist '("Gemfile$" . ruby-mode))
 
 ;; rspec-mode
