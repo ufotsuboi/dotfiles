@@ -20,6 +20,7 @@ autoload -Uz cd-gitroot
 alias gaa='git add -A'
 alias gst='git status'
 alias gcm='git commit'
+alias gc='git checkout'
 alias gbr='git branch'
 alias gpl='git pull'
 alias gps='git push'
