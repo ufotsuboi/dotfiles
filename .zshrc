@@ -20,6 +20,7 @@ autoload -Uz cd-gitroot
 alias gaa='git add -A'
 alias gst='git status'
 alias gcm='git commit'
+alias gc='git checkout'
 alias gbr='git branch'
 alias gpl='git pull'
 alias gps='git push'
@@ -234,6 +235,7 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 # alias
 alias e="emacs"
 alias mysql="mysql --auto-rehash"
+alias less="less -R"
 
 # anyenv
 if [ -d ${HOME}/.anyenv ] ; then
