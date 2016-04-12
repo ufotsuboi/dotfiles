@@ -24,6 +24,7 @@ alias gc='git checkout'
 alias gbr='git branch'
 alias gpl='git pull'
 alias gps='git push'
+alias gpsf='git push --force-with-lease'
 alias ggr='git grep'
 alias cdg='cd-gitroot'
 
