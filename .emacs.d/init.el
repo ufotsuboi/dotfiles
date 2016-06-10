@@ -237,6 +237,11 @@
 (add-hook 'coffee-mode-hook
           '(lambda() (coffee-custom)))
 
+;;; ts-mode
+(require 'typescript-mode)
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
+(setq typescript-indent-level 2)
+
 ;; (when (load "js2" t)
 ;;   (setq js2-cleanup-whitespace nil
 ;; 	js2-mirror-mode nil
