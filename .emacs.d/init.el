@@ -104,11 +104,11 @@
 
 
 ;; 保存時に自動で行末にある無駄な空白を削除
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-;; 保存時に自動で実行可能スクリプトならファイルを実行可能にする
-;(add-hook 'after-save-hook
-;          'executable-make-buffer-file-executable-if-script-p)
+(defvar delete-trailing-whitespece-before-save t)
+(defun my-delete-trailing-whitespace ()
+  (if delete-trailing-whitespece-before-save
+      (delete-trailing-whitespace)))
+(add-hook 'before-save-hook 'my-delete-trailing-whitespace)
 
 ;; C-aで行の本当に先頭ではなく，行の非空白文字の先頭へ
 (defun back-to-indentation-or-beginning ()
@@ -354,3 +354,11 @@
 ;; (custom-set-variables '(rspec-use-rake-flag nil))
 ;; (eval-after-load 'rspec-mode
 ;;   '(rspec-install-snippets))
+
+;;: markdown-mode
+(require 'markdown-mode)
+(add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.markdown$" . markdown-mode))
+(add-hook 'markdown-mode-hook
+          '(lambda ()
+             (set (make-local-variable 'delete-trailing-whitespece-before-save) nil)))
