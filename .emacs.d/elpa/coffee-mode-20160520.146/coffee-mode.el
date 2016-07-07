@@ -1,9 +1,9 @@
-;;; coffee-mode.el --- Major mode to edit CoffeeScript files in Emacs -*- lexical-binding: t; -*-
+;;; coffee-mode.el --- Major mode for CoffeeScript code -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2010 Chris Wanstrath
 
-;; Version: 0.6.0
-;; Package-Version: 20150602.2205
+;; Version: 0.6.3
+;; Package-Version: 20160520.146
 ;; Keywords: CoffeeScript major mode
 ;; Author: Chris Wanstrath <chris@ozmm.org>
 ;; URL: http://github.com/defunkt/coffee-mode
@@ -25,7 +25,7 @@
 ;; along with this program; if not, write to the Free Software
 ;; Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-;;; Commentary
+;;; Commentary:
 
 ;; Provides syntax highlighting, indentation support, imenu support,
 ;; compiling to JavaScript, REPL, a menu bar, and a few cute commands.
@@ -39,11 +39,14 @@
 
 (require 'cl-lib)
 
+(declare-function tramp-file-name-localname "tramp")
+(declare-function tramp-dissect-file-name "tramp")
+
 ;;
 ;; Customizable Variables
 ;;
 
-(defconst coffee-mode-version "0.6.0"
+(defconst coffee-mode-version "0.6.3"
   "The version of `coffee-mode'.")
 
 (defgroup coffee nil
@@ -53,59 +56,49 @@
 (defcustom coffee-tab-width tab-width
   "The tab width to use when indenting."
   :type 'integer
-  :group 'coffee
   :safe 'integerp)
 
 (defcustom coffee-command "coffee"
   "The CoffeeScript command used for evaluating code."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom coffee-js-directory ""
   "The directory for compiled JavaScript files output. This can
 be an absolute path starting with a `/`, or it can be path
 relative to the directory containing the coffeescript sources to
 be compiled."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom js2coffee-command "js2coffee"
   "The js2coffee command used for evaluating code."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom coffee-args-repl '("-i")
   "The arguments to pass to `coffee-command' to start a REPL."
-  :type 'list
-  :group 'coffee)
+  :type '(repeat string))
 
-(defcustom coffee-args-compile '("-c")
+(defcustom coffee-args-compile '("-c" "--no-header")
   "The arguments to pass to `coffee-command' to compile a file."
-  :type 'list
-  :group 'coffee)
+  :type '(repeat string))
 
 (defcustom coffee-compiled-buffer-name "*coffee-compiled*"
   "The name of the scratch buffer used for compiled CoffeeScript."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom coffee-repl-buffer "*CoffeeREPL*"
   "The name of the CoffeeREPL buffer."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom coffee-compile-jump-to-error t
   "Whether to jump to the first error if compilation fails.
 Since the coffee compiler does not always include a line number in
 its error messages, this is not always possible."
-  :type 'boolean
-  :group 'coffee)
+  :type 'boolean)
 
 (defcustom coffee-watch-buffer-name "*coffee-watch*"
   "The name of the scratch buffer used when using the --watch flag
 with CoffeeScript."
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (defcustom coffee-mode-hook nil
   "Hook called by `coffee-mode'.  Examples:
@@ -114,18 +107,24 @@ with CoffeeScript."
       (and (file-exists-p (buffer-file-name))
            (file-exists-p (coffee-compiled-file-name))
            (coffee-cos-mode t)))"
-  :type 'hook
-  :group 'coffee)
+  :type 'hook)
 
 (defcustom coffee-indent-tabs-mode nil
   "Indentation can insert tabs if this is t."
-  :group 'coffee
   :type 'boolean)
 
 (defcustom coffee-after-compile-hook nil
   "Hook called after compile to Javascript"
-  :type 'hook
-  :group 'coffee)
+  :type 'hook)
+
+(defcustom coffee-indent-like-python-mode nil
+  "Indent like python-mode."
+  :type 'boolean)
+
+(defcustom coffee-switch-to-compile-buffer nil
+  "Switch to compilation buffer `coffee-compiled-buffer-name' after compiling
+a buffer or region."
+  :type 'boolean)
 
 (defvar coffee-mode-map
   (let ((map (make-sparse-keymap)))
@@ -152,15 +151,17 @@ with CoffeeScript."
     map)
   "Keymap for CoffeeScript major mode.")
 
+(defvar coffee--process nil)
+
 ;;
 ;; Commands
 ;;
 
-(defvar coffee--repl-multiline-initialized nil)
-
 (defun coffee-comint-filter (string)
   (ansi-color-apply
-   (replace-regexp-in-string "\x1b\\[.[GJK]" "" string)))
+   (replace-regexp-in-string
+    "\uFF00" "\n"
+    (replace-regexp-in-string "\x1b\\[.[GJK]" "" string))))
 
 (defun coffee-repl ()
   "Launch a CoffeeScript REPL using `coffee-command' as an inferior mode."
@@ -174,7 +175,6 @@ with CoffeeScript."
             "NODE_NO_READLINE=1"
             coffee-command
             coffee-args-repl))
-    (make-local-variable 'coffee--repl-multiline-initialized)
     ;; Workaround for ansi colors
     (add-hook 'comint-preoutput-filter-functions 'coffee-comint-filter nil t))
 
@@ -200,6 +200,22 @@ with CoffeeScript."
       (with-current-buffer buffer
         (revert-buffer nil t)))))
 
+(defun coffee-parse-error-output (compiler-errstr)
+  (let* ((msg (car (split-string compiler-errstr "[\n\r]+")))
+         line column)
+    (message msg)
+    (when (or (string-match "on line \\([0-9]+\\)" msg)
+              (string-match ":\\([0-9]+\\):\\([0-9]+\\): error:" msg))
+      (setq line (string-to-number (match-string 1 msg)))
+      (when (match-string 2 msg)
+        (setq column (string-to-number (match-string 2 msg))))
+
+      (when coffee-compile-jump-to-error
+        (goto-char (point-min))
+        (forward-line (1- line))
+        (when column
+          (move-to-column (1- column)))))))
+
 (defun coffee-compile-file ()
   "Compiles and saves the current file to disk in a file of the same
 base name, with extension `.js'.  Subsequent runs will overwrite the
@@ -212,26 +228,16 @@ See `coffee-compile-jump-to-error'."
          (basename (file-name-sans-extension input))
          (output (when (string-match-p "\\.js\\'" basename) ;; for Rails '.js.coffee' file
                    basename))
-         (compile-cmd (coffee-command-compile input output))
-         (compiler-output (shell-command-to-string compile-cmd)))
+         (compile-args (coffee-command-compile input output))
+         (compiler-output (with-temp-buffer
+                            (unless (zerop (apply #'process-file coffee-command nil t nil compile-args))
+                              (error "Failed: %s %s" coffee-command compile-args))
+                            (buffer-substring-no-properties (point-min) (point-max)))))
     (if (string= compiler-output "")
         (let ((file-name (coffee-compiled-file-name (buffer-file-name))))
           (message "Compiled and saved %s" (or output (concat basename ".js")))
           (coffee-revert-buffer-compiled-file file-name))
-      (let* ((msg (car (split-string compiler-output "[\n\r]+")))
-             line column)
-        (message msg)
-        (when (or (string-match "on line \\([0-9]+\\)" msg)
-                  (string-match ":\\([0-9]+\\):\\([0-9]+\\): error:" msg))
-          (setq line (string-to-number (match-string 1 msg)))
-          (when (match-string 2 msg)
-            (setq column (string-to-number (match-string 2 msg))))
-
-          (when coffee-compile-jump-to-error
-            (goto-char (point-min))
-            (forward-line (1- line))
-            (when column
-              (move-to-column (1- column)))))))))
+      (coffee-parse-error-output compiler-output))))
 
 (defun coffee-compile-buffer ()
   "Compiles the current buffer and displays the JavaScript in a buffer
@@ -249,29 +255,35 @@ called `coffee-compiled-buffer-name'."
     (goto-char (point-min))
     (let ((line (buffer-substring-no-properties (point) (line-end-position))))
       (when (string-match "[0-9.]+\\'" line)
-        (string-to-number (match-string-no-properties 0 line))))))
+        (match-string-no-properties 0 line)))))
 
 (defun coffee--map-file-name (coffee-file)
   (let* ((version (coffee--coffeescript-version))
-         (extension (if (>= version 1.8) ".js.map" ".map")))
+         (extension (if (version<= "1.8" version) ".js.map" ".map")))
     ;; foo.js: foo.js.map(>= 1.8), foo.map(< 1.8)
     (concat (file-name-sans-extension coffee-file) extension)))
 
-(defun coffee-compile-sentinel (file line column)
+(defmacro coffee-save-window-if (bool &rest body)
+  `(if ,bool (save-selected-window ,@body) ,@body))
+(put 'coffee-save-window-if 'lisp-indent-function 1)
+
+(defun coffee-compile-sentinel (buffer file line column)
   (lambda (proc _event)
     (when (eq (process-status proc) 'exit)
-      (save-selected-window
+      (setq coffee--process nil)
+      (coffee-save-window-if (not coffee-switch-to-compile-buffer)
         (pop-to-buffer (get-buffer coffee-compiled-buffer-name))
         (ansi-color-apply-on-region (point-min) (point-max))
         (goto-char (point-min))
         (if (not (= (process-exit-status proc) 0))
-            (message "Failed: compiling to JavaScript")
+            (let ((compile-output (buffer-string)))
+              (with-current-buffer buffer
+                (coffee-parse-error-output compile-output)))
           (let ((props (list :sourcemap (coffee--map-file-name file)
                              :line line :column column :source file)))
             (let ((buffer-file-name "tmp.js"))
               (setq buffer-read-only t)
               (set-auto-mode)
-              (forward-line 1) ;; 1st line is comment
               (run-hook-with-args 'coffee-after-compile-hook props))))))))
 
 (defun coffee-start-compile-process (curbuf line column)
@@ -281,12 +293,17 @@ called `coffee-compiled-buffer-name'."
                        coffee-command (append coffee-args-compile '("-s" "-p"))))
           (curfile (buffer-file-name curbuf)))
       (set-process-query-on-exit-flag proc nil)
-      (set-process-sentinel proc (coffee-compile-sentinel curfile line column))
+      (set-process-sentinel
+       proc (coffee-compile-sentinel curbuf curfile line column))
       (with-current-buffer curbuf
         (process-send-region proc start end))
-      (process-send-eof proc))))
+      (process-send-string proc "\n")
+      (process-send-eof proc)
+      (setq coffee--process proc))))
 
 (defun coffee-start-generate-sourcemap-process (start end)
+  ;; so that sourcemap generation reads from the current buffer
+  (save-buffer)
   (let* ((file (buffer-file-name))
          (sourcemap-buf (get-buffer-create "*coffee-sourcemap*"))
          (proc (start-file-process "coffee-sourcemap" sourcemap-buf
@@ -294,13 +311,18 @@ called `coffee-compiled-buffer-name'."
          (curbuf (current-buffer))
          (line (line-number-at-pos))
          (column (current-column)))
+    (setq coffee--process proc)
     (set-process-query-on-exit-flag proc nil)
     (set-process-sentinel
      proc
      (lambda (proc _event)
        (when (eq (process-status proc) 'exit)
+         (setq coffee--process nil)
          (if (not (= (process-exit-status proc) 0))
-             (message "Error: generating sourcemap file")
+             (let ((sourcemap-output
+                    (with-current-buffer sourcemap-buf (buffer-string))))
+               (with-current-buffer curbuf
+                 (coffee-parse-error-output sourcemap-output)))
            (kill-buffer sourcemap-buf)
            (funcall (coffee-start-compile-process curbuf line column) start end)))))))
 
@@ -324,7 +346,9 @@ called `coffee-compiled-buffer-name'."
 
 (defun coffee-get-repl-proc ()
   (unless (comint-check-proc coffee-repl-buffer)
-    (coffee-repl))
+    (coffee-repl)
+    ;; see issue #332
+    (sleep-for 0 100))
   (get-buffer-process coffee-repl-buffer))
 
 (defun coffee-send-line ()
@@ -336,20 +360,11 @@ called `coffee-compiled-buffer-name'."
   "Send the current region to the inferior Coffee process."
   (interactive "r")
   (deactivate-mark t)
-  (let ((string (buffer-substring-no-properties start end))
-        (multiline-p (> (count-lines start end) 1)))
-    (let ((proc (coffee-get-repl-proc)))
-      (if (not multiline-p)
-          (comint-simple-send proc string)
-        ;; Swith to multiline mode
-        (with-current-buffer (process-buffer proc)
-          (let ((multiline-code (if coffee--repl-multiline-initialized "\026" "\026\026")))
-            (comint-send-string proc multiline-code)
-            (comint-simple-send proc string)
-            (unless (string-match-p "\n\\'" string)
-              (comint-send-string proc "\n"))
-            (comint-send-string proc multiline-code))))
-      (setq coffee--repl-multiline-initialized t))))
+  (let* ((string (buffer-substring-no-properties start end))
+         (proc (coffee-get-repl-proc))
+         (multiline-escaped-string
+          (replace-regexp-in-string "\n" "\uFF00" string)))
+    (comint-simple-send proc multiline-escaped-string)))
 
 (defun coffee-send-buffer ()
   "Send the current buffer to the inferior Coffee process."
@@ -409,10 +424,10 @@ called `coffee-compiled-buffer-name'."
 (defvar coffee-assign-regexp "\\(@?[_[:word:].$]+?\\)\\s-*:")
 
 ;; Local Assignment
-(defvar coffee-local-assign-regexp "\\s-*\\([_[:word:].$]+\\)\\s-*=\\(?:[^>=]\\|$\\)")
+(defvar coffee-local-assign-regexp "\\s-*\\([_[:word:].$]+\\)\\s-*\\??=\\(?:[^>=]\\|$\\)")
 
 ;; Lambda
-(defvar coffee-lambda-regexp "\\(?:(.*)\\)?\\s-*\\(->\\|=>\\)")
+(defvar coffee-lambda-regexp "\\(?:([^)]*)\\)?\\s-*\\(->\\|=>\\)")
 
 ;; Namespaces
 (defvar coffee-namespace-regexp "\\b\\(?:class\\s-+\\(\\S-+\\)\\)\\b")
@@ -506,25 +521,24 @@ For details, see `comment-dwim'."
     (comment-dwim arg)
     (deactivate-mark t)))
 
-(defsubst coffee-command-compile-arg-as-string (output)
-  (mapconcat 'identity
-             (or (and output (append coffee-args-compile (list "-j" output)))
-                 coffee-args-compile)
-             " "))
+(defsubst coffee-command-compile-options (output)
+  (if output
+      (append coffee-args-compile (list "-j" output))
+    coffee-args-compile))
 
-(defun coffee-command-compile (input &optional output)
+(defun coffee-command-compile (input output)
   "Run `coffee-command' to compile FILE-NAME to file with default
 .js output file, or optionally to OUTPUT-FILE-NAME."
-  (let* ((full-file-name (expand-file-name input))
-         (output-file (coffee-compiled-file-name full-file-name))
+  (let* ((expanded (expand-file-name input))
+         (filename (if (file-remote-p expanded)
+                       (tramp-file-name-localname (tramp-dissect-file-name expanded))
+                     (file-truename expanded)))
+         (output-file (coffee-compiled-file-name filename))
          (output-dir (file-name-directory output-file)))
     (unless (file-directory-p output-dir)
       (make-directory output-dir t))
-    (format "%s %s -o %s %s"
-            (shell-quote-argument coffee-command)
-            (coffee-command-compile-arg-as-string output)
-            (shell-quote-argument output-dir)
-            (shell-quote-argument full-file-name))))
+    (append (coffee-command-compile-options output)
+            (list "-o" output-dir filename))))
 
 (defun coffee-run-cmd (args)
   "Run `coffee-command' with the given arguments, and display the
@@ -534,6 +548,14 @@ output in a compilation buffer."
          (lambda (_this-mode)
            (generate-new-buffer-name coffee-compiled-buffer-name))))
     (compile (concat coffee-command " " args))))
+
+(defun coffee-toggle-fatness ()
+  "Toggle fatness of a coffee function arrow."
+  (interactive)
+  (save-excursion
+    (when (re-search-backward "[-=]>" nil t)
+      (cond ((looking-at "=") (replace-match "-"))
+            ((looking-at "-") (replace-match "="))))))
 
 ;;
 ;; imenu support
@@ -681,6 +703,15 @@ output in a compilation buffer."
   (when (< (current-column) (current-indentation))
     (back-to-indentation)))
 
+(defun coffee--indent-line-like-python-mode (prev-indent repeated)
+  (let ((next-indent (- (current-indentation) coffee-tab-width))
+        (indent-p (coffee-line-wants-indent)))
+    (if repeated
+        (if (< next-indent 0)
+            (+ prev-indent (if indent-p coffee-tab-width 0))
+          next-indent)
+      (+ prev-indent (if indent-p coffee-tab-width 0)))))
+
 (defun coffee-indent-line ()
   "Indent current line as CoffeeScript."
   (interactive)
@@ -691,18 +722,22 @@ output in a compilation buffer."
          begin-indents)
     (if (and type (setq begin-indents (coffee--find-indents type limit '<)))
         (setq indent-size (coffee--decide-indent curindent begin-indents '>))
-      (let ((prev-indent (coffee-previous-indent))
-            (next-indent-size (+ curindent coffee-tab-width)))
-        (if (> (- next-indent-size prev-indent) coffee-tab-width)
-            (setq indent-size 0)
-          (setq indent-size (+ curindent coffee-tab-width)))))
+      (if coffee-indent-like-python-mode
+          (setq indent-size
+                (coffee--indent-line-like-python-mode
+                 (coffee-previous-indent) (eq last-command this-command)))
+        (let ((prev-indent (coffee-previous-indent))
+              (next-indent-size (+ curindent coffee-tab-width)))
+          (if (> (- next-indent-size prev-indent) coffee-tab-width)
+              (setq indent-size 0)
+            (setq indent-size (+ curindent coffee-tab-width))))))
     (coffee--indent-insert-spaces indent-size)))
 
 (defun coffee-previous-indent ()
   "Return the indentation level of the previous non-blank line."
   (save-excursion
     (forward-line -1)
-    (while (and (looking-at "^[ \t]*$") (not (bobp)))
+    (while (and (looking-at-p "^[ \t]*$") (not (bobp)))
       (forward-line -1))
     (current-indentation)))
 
@@ -738,17 +773,19 @@ called from first non-blank char of line.
 
 Delete ARG spaces if ARG!=1."
   (interactive "*p")
-  (if (and (= 1 arg)
-           (= (point) (save-excursion
-                        (back-to-indentation)
-                        (point)))
-           (not (bolp)))
-      (let* ((extra-space-count (% (current-column) coffee-tab-width))
-             (deleted-chars (if (zerop extra-space-count)
-                                coffee-tab-width
-                              extra-space-count)))
-        (backward-delete-char-untabify deleted-chars))
-    (backward-delete-char-untabify arg)))
+  (if (use-region-p)
+      (delete-region (region-beginning) (region-end))
+    (if (and (= 1 arg)
+             (= (point) (save-excursion
+                          (back-to-indentation)
+                          (point)))
+             (not (bolp)))
+        (let* ((extra-space-count (% (current-column) coffee-tab-width))
+               (deleted-chars (if (zerop extra-space-count)
+                                  coffee-tab-width
+                                extra-space-count)))
+          (backward-delete-char-untabify deleted-chars))
+      (backward-delete-char-untabify arg))))
 
 ;; Indenters help determine whether the current line should be
 ;; indented further based on the content of the previous line. If a
@@ -756,7 +793,7 @@ Delete ARG spaces if ARG!=1."
 ;; want to indent the next line.
 
 (defvar coffee-indenters-bol '("class" "for" "if" "else" "unless" "while" "until"
-                               "try" "catch" "finally" "switch")
+                               "try" "catch" "finally" "switch" "when")
   "Keywords or syntax whose presence at the start of a line means the
 next line should probably be indented.")
 
@@ -764,7 +801,7 @@ next line should probably be indented.")
   "Builds a regexp out of `coffee-indenters-bol' words."
   (regexp-opt coffee-indenters-bol 'words))
 
-(defvar coffee-indenters-eol '(?> ?{ ?\[)
+(defvar coffee-indenters-eol '(?> ?{ ?\[ ?:)
   "Single characters at the end of a line that mean the next line
 should probably be indented.")
 
@@ -778,15 +815,16 @@ previous line."
       (or (and char-of-eol (memq char-of-eol coffee-indenters-eol))
           (progn
             (back-to-indentation)
-            (looking-at (coffee-indenters-bol-regexp)))))))
+            (and (looking-at-p (coffee-indenters-bol-regexp))
+                 (not (re-search-forward "\\_<then\\_>" (line-end-position) t))))))))
 
 (defun coffee-previous-line-is-single-line-comment ()
   "Return t if the previous line is a CoffeeScript single line comment."
   (save-excursion
     (forward-line -1)
     (back-to-indentation)
-    (and (looking-at "#")
-         (not (looking-at "###\\(?:\\s-+.*\\)?$"))
+    (and (looking-at-p "#")
+         (not (looking-at-p "###\\(?:\\s-+.*\\)?$"))
          (progn
            (goto-char (line-end-position))
            (nth 4 (syntax-ppss))))))
@@ -816,10 +854,10 @@ shifted. The shifted region includes the lines in which START and
 END lie. An error is signaled if any lines in the region are
 indented less than COUNT columns."
   (interactive
-   (if mark-active
+   (if (use-region-p)
        (list (region-beginning) (region-end) current-prefix-arg)
      (list (line-beginning-position) (line-end-position) current-prefix-arg)))
-  (let ((amount (if count (prefix-numeric-value count)
+  (let ((amount (if count (* coffee-tab-width (prefix-numeric-value count))
                   (coffee-indent-shift-amount start end 'left))))
     (when (> amount 0)
       (let (deactivate-mark)
@@ -828,7 +866,7 @@ indented less than COUNT columns."
           ;; Check that all lines can be shifted enough
           (while (< (point) end)
             (if (and (< (current-indentation) amount)
-                     (not (looking-at "[ \t]*$")))
+                     (not (looking-at-p "[ \t]*$")))
                 (error "Can't shift all lines enough"))
             (forward-line))
           (indent-rigidly start end (- amount)))))))
@@ -842,11 +880,11 @@ if COUNT is not given, indents to the closest increment of
 shifted. The shifted region includes the lines in which START and
 END lie."
   (interactive
-   (if mark-active
+   (if (use-region-p)
        (list (region-beginning) (region-end) current-prefix-arg)
      (list (line-beginning-position) (line-end-position) current-prefix-arg)))
   (let (deactivate-mark
-        (amount (if count (prefix-numeric-value count)
+        (amount (if count (* coffee-tab-width (prefix-numeric-value count))
                   (coffee-indent-shift-amount start end 'right))))
     (indent-rigidly start end amount)))
 
@@ -890,7 +928,7 @@ comments such as the following:
       ..."
   (let ((ret (forward-paragraph count)))
     (when (and (= count -1)
-               (looking-at "[[:space:]]*###[[:space:]]*$"))
+               (looking-at-p "[[:space:]]*###[[:space:]]*$"))
       (forward-line))
     ret))
 
@@ -1158,9 +1196,59 @@ comments such as the following:
      (0 (ignore (coffee-syntax-propertize-block-comment)))))
    (point) end))
 
+(defun coffee-get-comment-info ()
+  (let* ((syntax (syntax-ppss))
+         (commentp (nth 4 syntax))
+         (comment-start-kinda (nth 8 syntax)))
+    (when commentp
+      (save-excursion
+        (if (and
+             (> comment-start-kinda 2) (< comment-start-kinda (point-max))
+             (string=
+              "###" (buffer-substring
+                     (- comment-start-kinda 2) (1+ comment-start-kinda))))
+            'multiple-line
+          'single-line)))))
+
+(defun coffee-comment-line-break-fn (&optional _)
+  (let ((comment-type (coffee-get-comment-info))
+        (coffee-indent-like-python-mode t))
+    (comment-indent-new-line)
+    (cond ((eq comment-type 'multiple-line)
+           (save-excursion
+             (beginning-of-line)
+             (when (looking-at "[[:space:]]*\\(#\\)")
+               (replace-match "" nil nil nil 1))))
+          ((eq comment-type 'single-line)
+           (coffee-indent-line)))))
+
+(defun coffee-auto-fill-fn ()
+  (let ((comment-type (coffee-get-comment-info))
+        (fill-result (do-auto-fill))
+        (coffee-indent-like-python-mode t))
+    (when (and fill-result (eq comment-type 'single-line))
+      (save-excursion
+        (beginning-of-line)
+        (when (looking-at "[[:space:]]*#")
+          (replace-match "#")))
+      (coffee-indent-line))))
+
 ;;
 ;; Define Major Mode
 ;;
+
+(defvar coffee-mode-syntax-table
+  (let ((table (make-syntax-table)))
+    ;; perl style comment: "# ..."
+    (modify-syntax-entry ?# "< b" table)
+    (modify-syntax-entry ?\n "> b" table)
+
+    ;; Treat slashes as paired delimiters; useful for finding regexps.
+    (modify-syntax-entry ?/ "/" table)
+
+    ;; single quote strings
+    (modify-syntax-entry ?' "\"" table)
+    table))
 
 ;;;###autoload
 (define-derived-mode coffee-mode prog-mode "Coffee"
@@ -1169,17 +1257,12 @@ comments such as the following:
   ;; code for syntax highlighting
   (setq font-lock-defaults '((coffee-font-lock-keywords)))
 
-  ;; perl style comment: "# ..."
-  (modify-syntax-entry ?# "< b" coffee-mode-syntax-table)
-  (modify-syntax-entry ?\n "> b" coffee-mode-syntax-table)
-
-  ;; Treat slashes as paired delimiters; useful for finding regexps.
-  (modify-syntax-entry ?/ "/" coffee-mode-syntax-table)
+  ;; fix comment filling function
+  (set (make-local-variable 'comment-line-break-function)
+        #'coffee-comment-line-break-fn)
+  (set (make-local-variable 'normal-auto-fill-function) #'coffee-auto-fill-fn)
 
   (set (make-local-variable 'comment-start) "#")
-
-  ;; single quote strings
-  (modify-syntax-entry ?' "\"" coffee-mode-syntax-table)
 
   ;; indentation
   (make-local-variable 'coffee-tab-width)
@@ -1217,18 +1300,37 @@ comments such as the following:
 
 (defcustom coffee-cos-mode-line " CoS"
   "Lighter of `coffee-cos-mode'"
-  :type 'string
-  :group 'coffee)
+  :type 'string)
 
 (define-minor-mode coffee-cos-mode
   "Toggle compile-on-save for coffee-mode.
 
 Add `'(lambda () (coffee-cos-mode t))' to `coffee-mode-hook' to turn
 it on by default."
-  :group 'coffee :lighter coffee-cos-mode-line
+  :lighter coffee-cos-mode-line
   (if coffee-cos-mode
       (add-hook 'after-save-hook 'coffee-compile-file nil t)
     (remove-hook 'after-save-hook 'coffee-compile-file t)))
+
+;;
+;; Live compile minor mode
+;;
+
+(defun coffee--live-compile (&rest _unused)
+  (when (or (not coffee--process)
+            (not (eq (process-status coffee--process) 'run)))
+    (coffee-compile-buffer)))
+
+(defcustom coffee-live-compile-mode-line " LiveCS"
+  "Lighter of `coffee-live-compile-mode'"
+  :type 'string)
+
+(define-minor-mode coffee-live-compile-mode
+  "Compile current buffer in real time"
+  :lighter coffee-live-comp-mode-line
+  (if coffee-live-compile-mode
+      (add-hook 'after-change-functions 'coffee--live-compile nil t)
+    (remove-hook 'after-change-functions 'coffee--live-compile t)))
 
 (provide 'coffee-mode)
 

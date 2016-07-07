@@ -296,7 +296,6 @@
                                ac-source-words-in-all-buffer
                                ac-source-dictionary
                                ))
-            (flymake-mode t)
             ))
 ;(add-to-list 'ac-modes 'scss-mode)
 
