@@ -164,6 +164,10 @@
 ;;       (let ((web-mode-enable-part-face nil))
 ;;         ad-do-it)
 ;;         ad-do-it))
+
+(add-to-list 'web-mode-comment-formats '("jsx" . "//" ))
+(add-to-list 'web-mode-comment-formats '("javascript" . "//" ))
+
 (defun web-mode-hook ()
   "Hooks for Web mode."
   ;; html indent
@@ -172,16 +176,8 @@
   (setq web-mode-css-indent-offset 2)
   ;; script indent(js,php,etc..)
   (setq web-mode-code-indent-offset 2)
-  (setq web-mode-content-types-alist
-        '(("jsx"  . "\\.js[x]?\\'")))
-  ;; htmlの内容をインデント
-  ;; TEXTAREA等の中身をインデントすると副作用が起こったりするので
-  ;; デフォルトではインデントしない
-  ;;(setq web-mode-indent-style 2)
-  ;; コメントのスタイル
-  ;;   1:htmlのコメントスタイル(default)
-  ;;   2:テンプレートエンジンのコメントスタイル
-  ;;      (Ex. {# django comment #},{* smarty comment *},{{-- blade comment --}})
+  (setq web-mode-content-types-alist '(("jsx"  . "\\.js[x]$")))
+
   (setq web-mode-comment-style 2)
   ;; 終了タグの自動補完をしない
   ;;(setq web-mode-disable-auto-pairing t)
@@ -226,21 +222,27 @@
  )
 
 ;;; js-mode
+(setq js-indent-level 2)
+(load-file "~/.emacs.d/sgml-mode-patch.el")
+(require 'sgml-mode)
+(require 'js2-mode)
+;(add-to-list 'auto-mode-alist '("\\.js[x]?\\'" . js2-jsx-mode))
+(setq-default js2-auto-indent-p nil)
+(setq-default js2-strict-missing-semi-warning t)
+(setq-default js2-strict-trailing-comma-warning nil)
+(setq-default js2-indent-level 2)
 
-(add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
-(defun coffee-custom ()
-  "coffee-mode-hook"
-  (and (set (make-local-variable 'tab-width) 2)
-       (set (make-local-variable 'coffee-tab-width) 2))
-  )
-
-(add-hook 'coffee-mode-hook
-          '(lambda() (coffee-custom)))
-
-;;; ts-mode
-(require 'typescript-mode)
-(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
-(setq typescript-indent-level 2)
+(add-hook 'js2-mode-hook
+          (lambda ()
+            (set (make-local-variable 'js2-indent-switch-body) t)
+            (setq js2-basic-offset 2
+                  tab-width        4
+                  indent-tabs-mode nil
+                  js2-cleanup-whitespace nil)))
+;; (custom-set-faces
+;;  '(js2-object-property
+;;    ((t (:foreground "lightgoldenrod"))))
+;; )
 
 ;; (when (load "js2" t)
 ;;   (setq js2-cleanup-whitespace nil
@@ -260,23 +262,26 @@
 ;;   (define-key js2-mode-map "\C-m" nil)
 
 ;;   ;; (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-;;   (add-to-list 'auto-mode-alist '("\\.json$" . js2-mode))
+;;
 ;;   )
 
-;; CSS
-(defun my-css-electric-pair-brace ()
-  (interactive)
-  (insert "{")(newline-and-indent)
-  (newline-and-indent)
-  (insert "}")
-  (indent-for-tab-command)
-  (previous-line)(indent-for-tab-command)
+;;; coffee-mode
+(add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
+(defun coffee-custom ()
+  "coffee-mode-hook"
+  (and (set (make-local-variable 'tab-width) 2)
+       (set (make-local-variable 'coffee-tab-width) 2))
   )
 
-(defun my-semicolon-ret ()
-  (interactive)
-  (insert ";")
-  (newline-and-indent))
+(add-hook 'coffee-mode-hook
+          '(lambda() (coffee-custom)))
+
+;;; ts-mode
+(require 'typescript-mode)
+(add-to-list 'auto-mode-alist '("\\.ts\\'" . typescript-mode))
+(setq typescript-indent-level 2)
+
+;;; CSS
 
 ;; scss-mode
 ;; https://github.com/antonj/scss-mode
@@ -287,8 +292,6 @@
 ;(add-hook 'scss-mode-hook 'ac-css-mode-setup)
 (add-hook 'scss-mode-hook
           (lambda ()
-            (define-key scss-mode-map "\M-[" 'my-css-electric-pair-brace)
-            ;;(define-key scss-mode-map ";" 'my-semicolon-ret)
             (setq css-indent-offset 2)
             (setq scss-compile-at-save nil)
             (setq ac-sources '(ac-source-yasnippet
