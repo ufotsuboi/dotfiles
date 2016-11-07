@@ -3,4 +3,12 @@
 # prompt
 local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
 
+# Google cloud SDK
 export PATH=/Users/yuuho.tsuboi/google-cloud-sdk/bin:$PATH
+
+# direnv
+eval "$(direnv hook zsh)"
+export EDITOR=emacs
+
+# brew
+alias brew="env PATH=${PATH//${HOME}\/\.anyenv\/envs\/pyenv\/shims:/} brew"

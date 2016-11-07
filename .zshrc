@@ -236,7 +236,10 @@ ZSH_THEME_GIT_PROMPT_CLEAN="%{$fg[blue]%})"
 # alias
 alias e="emacs"
 alias mysql="mysql --auto-rehash"
-alias less="less -R"
+
+# less
+export LESS='-g -i -M -R -S -W -z-4 -x4'
+export PAGER=less
 
 # anyenv
 if [ -d ${HOME}/.anyenv ] ; then
