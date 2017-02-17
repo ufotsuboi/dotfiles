@@ -12,3 +12,10 @@ export EDITOR=emacs
 
 # brew
 alias brew="env PATH=${PATH//${HOME}\/\.anyenv\/envs\/pyenv\/shims:/} brew"
+
+# go
+export GOPATH=$HOME/work/go
+export PATH=$PATH:$GOPATH/bin
+
+# Rails
+export PATH=.git/safe/../../bin:.git/safe/../../vendor/bundle/bin:$PATH
