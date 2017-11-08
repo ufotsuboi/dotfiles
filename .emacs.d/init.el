@@ -199,27 +199,20 @@
 
 ;;色の設定
 (custom-set-faces
- '(web-mode-html-tag-bracket-face
-   ((t (:foreground "gray60"))))
- '(web-mode-doctype-face
-   ((t (:foreground "#82AE46"))))
- '(web-mode-html-tag-face
-   ((t (:foreground "lightskyblue" :weight bold))))
- '(web-mode-html-attr-name-face
-   ((t (:foreground "lightgoldenrod"))))
- '(web-mode-html-attr-value-face
-   ((t (:foreground "lightsalmon"))))
- '(web-mode-comment-face
-   ((t (:foreground "orangered"))))
- '(web-mode-server-comment-face
-   ((t (:foreground "#D9333F"))))
- '(web-mode-css-rule-face
-   ((t (:foreground "#A0D8EF"))))
- '(web-mode-css-pseudo-class-face
-   ((t (:foreground "#FF7F00"))))
- '(web-mode-css-at-rule-face
-   ((t (:foreground "#FF7F00"))))
- )
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(web-mode-comment-face ((t (:foreground "orangered"))))
+ '(web-mode-css-at-rule-face ((t (:foreground "#FF7F00"))))
+ '(web-mode-css-pseudo-class-face ((t (:foreground "#FF7F00"))))
+ '(web-mode-css-rule-face ((t (:foreground "#A0D8EF"))))
+ '(web-mode-doctype-face ((t (:foreground "#82AE46"))))
+ '(web-mode-html-attr-name-face ((t (:foreground "lightgoldenrod"))))
+ '(web-mode-html-attr-value-face ((t (:foreground "lightsalmon"))))
+ '(web-mode-html-tag-bracket-face ((t (:foreground "gray60"))))
+ '(web-mode-html-tag-face ((t (:foreground "lightskyblue" :weight bold))))
+ '(web-mode-server-comment-face ((t (:foreground "#D9333F")))))
 
 ;;; js-mode
 (setq js-indent-level 2)
@@ -264,6 +257,9 @@
 ;;   ;; (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 ;;
 ;;   )
+
+;;; ruby-mode
+(add-to-list 'auto-mode-alist '("\\.ruby$" . ruby-mode))
 
 ;;; coffee-mode
 (add-to-list 'auto-mode-alist '("\\.coffee$" . coffee-mode))
@@ -364,3 +360,9 @@
 (add-hook 'markdown-mode-hook
           '(lambda ()
              (set (make-local-variable 'delete-trailing-whitespece-before-save) nil)))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(safe-local-variable-values (quote ((encoding . utf-8)))))

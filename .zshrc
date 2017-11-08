@@ -246,6 +246,7 @@ export PAGER=less
 if [ -d ${HOME}/.anyenv ] ; then
     export PATH="$HOME/.anyenv/bin:$PATH"
     eval "$(anyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
     for D in `ls $HOME/.anyenv/envs`
     do
         export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
@@ -255,4 +256,4 @@ fi
 
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
-export PATH="$HOME/.yarn/bin:$PATH"
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
