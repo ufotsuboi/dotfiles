@@ -257,3 +257,6 @@ fi
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+# pipenv
+export PIPENV_VENV_IN_PROJECT=true
