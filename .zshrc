@@ -242,18 +242,6 @@ alias mysql="mysql --auto-rehash"
 export LESS='-g -i -M -R -S -W -z-4 -x4'
 export PAGER=less
 
-# anyenv
-if [ -d ${HOME}/.anyenv ] ; then
-    export PATH="$HOME/.anyenv/bin:$PATH"
-    eval "$(anyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
-    for D in `ls $HOME/.anyenv/envs`
-    do
-        export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
-    done
-fi
-
-
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
