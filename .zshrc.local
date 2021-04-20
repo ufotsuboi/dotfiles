@@ -33,3 +33,7 @@ if [ -f '/Users/yuuho.tsuboi/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/yu
 
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/yuuho.tsuboi/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/yuuho.tsuboi/google-cloud-sdk/completion.zsh.inc'; fi
+
+
+# poetry
+export PATH=$HOME/.poetry/bin:$PATH
