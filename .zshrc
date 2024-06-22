@@ -27,7 +27,7 @@ alias gps='git push'
 alias gpsf='git push --force-with-lease'
 alias ggr='git grep'
 alias cdg='cd-gitroot'
-alias gclean='git branch --merged master | grep -E "fix\/|feature\/" | grep -vE "^\*" | xargs -I % git branch -d %'
+alias gclean='git branch --merged main | grep -E "fix\/|feature\/" | grep -vE "^\*" | xargs -I % git branch -d %'
 
 ############
 # completion

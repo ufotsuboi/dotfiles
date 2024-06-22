@@ -3,23 +3,20 @@
 # prompt
 local ret_status="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ %s)"
 
-# Google cloud SDK
-export PATH=/Users/yuuho.tsuboi/google-cloud-sdk/bin:$PATH
+# brew
+eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # anyenv
 eval "$(anyenv init -)"
-# eval "$(pyenv virtualenv-init -)"
-# for D in `ls $HOME/.anyenv/envs`
-# do
-#     export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
-# done
+eval "$(pyenv virtualenv-init -)"
+for D in `ls $HOME/.anyenv/envs`
+do
+    export PATH="$HOME/.anyenv/envs/$D/shims:$PATH"
+done
 
 # direnv
 eval "$(direnv hook zsh)"
 export EDITOR=emacs
-
-# brew
-alias brew="env PATH=${PATH//${HOME}\/\.anyenv\/envs\/pyenv\/shims:/} brew"
 
 # go
 export GOPATH=$HOME/work/go
@@ -28,12 +25,17 @@ export PATH=$PATH:$GOPATH/bin
 # Rails
 export PATH=.git/safe/../../bin:.git/safe/../../vendor/bundle/bin:$PATH
 
+# Google cloud SDK
+# v1.25 のリリース前に gke-gcloud-auth-plugin で kubectl を実行する
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/yuuho.tsuboi/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/yuuho.tsuboi/google-cloud-sdk/path.zsh.inc'; fi
-
 # The next line enables shell command completion for gcloud.
 if [ -f '/Users/yuuho.tsuboi/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/yuuho.tsuboi/google-cloud-sdk/completion.zsh.inc'; fi
 
-
 # poetry
 export PATH=$HOME/.poetry/bin:$PATH
+
+# Docker on Lima
+export DOCKER_HOST=unix:///Users/yuuho.tsuboi/.lima/docker/sock/docker.sock
+export DOCKER_BUILDKIT=1
